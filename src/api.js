@@ -807,18 +807,36 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
 
     /** @classdesc
     * Represents an SQLite database
+    *
+    * Open a new database
+    *  - either by creating a new one
+    *  - readonly one from an ArrayBuffer
+    *  - readonly one from a File instance (supported only in webworkers)
+    *
     * @constructs Database
     * @memberof module:SqlJs
-    * Open a new database either by creating a new one or opening an existing
-    * one stored in the byte array passed in first argument
-    * @param {number[]} data An array of bytes representing
-    * an SQLite database file
+    *
+    * @param { data: number[], file: File } options
     */
-    function Database(data) {
+    function Database(options) {
+        options = options || {};
         this.filename = "dbfile_" + (0xffffffff * Math.random() >>> 0);
-        if (data != null) {
+
+        if (options.data != null) {
+            // create a fake file with the database content
+            var data = options.data;
             FS.createDataFile("/", this.filename, data, true, true);
+        } else if (options.file) {
+            // Load the File instance into a WORKERFS
+            // This feature is only available when using sql.js in a webworker
+            var file = options.file;
+            var tmpDir = "/workerfs_" + (0xffffffff * Math.random() >>> 0);
+            // override random filename with actual path and file name
+            this.filename = tmpDir + "/" + file.name;
+            FS.mkdir(tmpDir);
+            FS.mount(WORKERFS, { files: [file] }, tmpDir);
         }
+
         this.handleError(sqlite3_open(this.filename, apiTemp));
         this.db = getValue(apiTemp, "i32");
         registerExtensionFunctions(this.db);
