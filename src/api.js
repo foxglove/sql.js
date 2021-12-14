@@ -808,16 +808,13 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
 
     /** @classdesc
     * Represents an SQLite database
-    *
-    * Open a new database
-    *  - either by creating a new one
-    *  - readonly one from an ArrayBuffer
-    *  - readonly one from a File instance (supported only in webworkers)
-    *
     * @constructs Database
     * @memberof module:SqlJs
-    *
-    * @param { data: number[], file: File } options
+    * @param {Object | number[]} options Option object or an array of
+    * bytes representing an SQLite database file
+    * @param {number[]} options.data An array of bytes representing
+    * an SQLite database file
+    * @param {File} options.file File instance (supported only in webworkers)
     */
     function Database(options) {
         options = options || {};
