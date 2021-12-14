@@ -836,6 +836,9 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
             this.filename = tmpDir + "/" + file.name;
             FS.mkdir(tmpDir);
             FS.mount(WORKERFS, { files: [file] }, tmpDir);
+        } else if (options instanceof Array || options instanceof Uint8Array) {
+            // backwards compat with upstream new Database(data) api
+            FS.createDataFile("/", this.filename, options, true, true);
         }
 
         this.handleError(sqlite3_open(this.filename, apiTemp));
