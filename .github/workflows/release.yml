@@ -2,7 +2,7 @@ on:
   push:
     # Sequence of patterns matched against refs/tags
     tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
 
 name: Create a release
 
@@ -43,7 +43,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/sql-asm.js
           asset_name: sql.js
-          asset_label: asm.js version, slower, easy to integrate and compatible with old browsers 
+          asset_label: asm.js version, slower, easy to integrate and compatible with old browsers
           asset_content_type: text/javascript
       - run: cd dist && zip sqljs-worker-wasm.zip worker.sql-wasm.js sql-wasm.wasm
       - name: Upload Release Asset (worker wasm)
@@ -75,11 +75,11 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: dist/sqljs-all.zip
           asset_name: sqljs-all.zip
-          asset_label: all versions, including non-minified javascript 
+          asset_label: all versions, including non-minified javascript
           asset_content_type: application/zip
       - name: publish the package to NPM
         run: |
-          npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+          npm config set '//registry.npmjs.org/:_authToken' "${NPM_PUBLISH_TOKEN}"
           npm publish
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
