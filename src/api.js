@@ -1,6 +1,7 @@
 /* global
     ALLOC_NORMAL
     FS
+    WORKERFS
     HEAP8
     Module
     _malloc
