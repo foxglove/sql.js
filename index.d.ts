@@ -42,7 +42,7 @@ export declare class Database {
      *
      * @param data An array of bytes representing an SQLite database file
      */
-    constructor(data?: ArrayLike<number> | Buffer | null);
+    constructor(data?: ArrayLike<number> | Buffer | null | { file: File } | { data: ArrayLike<number> | Buffer });
 
     /**
      * Close the database, and all associated prepared statements. The
