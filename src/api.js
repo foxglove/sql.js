@@ -828,11 +828,12 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
             // Load the File instance into a WORKERFS
             // This feature is only available when using sql.js in a webworker
             var file = options.file;
-            var tmpDir = "/workerfs_" + (0xffffffff * Math.random() >>> 0);
+            // Store tmpdir to unmount when closing the database
+            this.tmpDir = "/workerfs_" + (0xffffffff * Math.random() >>> 0);
             // override random filename with actual path and file name
-            this.filename = tmpDir + "/" + file.name;
-            FS.mkdir(tmpDir);
-            FS.mount(WORKERFS, { files: [file] }, tmpDir);
+            this.filename = this.tmpDir + "/" + file.name;
+            FS.mkdir(this.tmpDir);
+            FS.mount(WORKERFS, { files: [file] }, this.tmpDir);
         } else if (options instanceof Array || options instanceof Uint8Array) {
             // backwards compat with upstream new Database(data) api
             FS.createDataFile("/", this.filename, options, true, true);
@@ -1122,7 +1123,13 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         Object.values(this.functions).forEach(removeFunction);
         this.functions = {};
         this.handleError(sqlite3_close_v2(this.db));
-        FS.unlink("/" + this.filename);
+
+        if (this.tmpDir) {
+            FS.unmount(this.tmpDir);
+            FS.rmdir(this.tmpDir);
+        } else {
+            FS.unlink("/" + this.filename);
+        }
         this.db = null;
     };
 
