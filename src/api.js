@@ -19,6 +19,7 @@
     UTF8ToString
     stringToUTF8
     lengthBytesUTF8
+    FileReaderSync
 */
 
 "use strict";
@@ -825,15 +826,27 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
             var data = options.data;
             FS.createDataFile("/", this.filename, data, true, true);
         } else if (options.file) {
-            // Load the File instance into a WORKERFS
+            // Load the File instance into the filesystem as a WORKERFS node
             // This feature is only available when using sql.js in a webworker
             var file = options.file;
-            // Store tmpdir to unmount when closing the database
-            this.tmpDir = "/workerfs_" + (0xffffffff * Math.random() >>> 0);
-            // override random filename with actual path and file name
-            this.filename = this.tmpDir + "/" + file.name;
-            FS.mkdir(this.tmpDir);
-            FS.mount(WORKERFS, { files: [file] }, this.tmpDir);
+
+            // We never mount a WORKERFS so we initialize its reader ourselves
+            if (!WORKERFS.reader) WORKERFS.reader = new FileReaderSync();
+
+            // A hack which leverages the WORKERFS implementation to create a
+            // _node_ under our root file system (MEMFS). This allows read/seek
+            // operations to occur directly against the file instance using
+            // FileReaderSync.
+            //
+            // This hack also supports sqlite files which require WAL journaling
+            // mode. When reading files with WAL journaling, sqlite creates
+            // sidecar -wal and -shm files. If we only used a WORKERFS root or
+            // subdirectory, sqlite would not be able to create -wal and -shm
+            // files since WORKERFS does not support making new files. By using
+            // MEMFS as the root fs and injecting our WORKERFS as a single node
+            // we allow MEMFS to handle the -wal and -shm sidecar files.
+            WORKERFS.createNode(FS.root, this.filename, WORKERFS.FILE_MODE, 0,
+                file, file.lastModifiedDate);
         } else if (options instanceof Array || options instanceof Uint8Array) {
             // backwards compat with upstream new Database(data) api
             FS.createDataFile("/", this.filename, options, true, true);
@@ -1123,13 +1136,7 @@ Module["onRuntimeInitialized"] = function onRuntimeInitialized() {
         Object.values(this.functions).forEach(removeFunction);
         this.functions = {};
         this.handleError(sqlite3_close_v2(this.db));
-
-        if (this.tmpDir) {
-            FS.unmount(this.tmpDir);
-            FS.rmdir(this.tmpDir);
-        } else {
-            FS.unlink("/" + this.filename);
-        }
+        FS.unlink("/" + this.filename);
         this.db = null;
     };
 
